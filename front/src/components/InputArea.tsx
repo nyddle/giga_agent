@@ -14,6 +14,7 @@ import {
   Files,
   Cog,
   Printer,
+  ScanSearch,
 } from "lucide-react";
 import { useSettings } from "./Settings.tsx";
 import { useFileUpload, UploadedFile } from "../hooks/useFileUploads";
@@ -39,10 +40,13 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ensureNotificationPermission } from "@/lib/notifications";
 
 const MAX_TEXTAREA_HEIGHT = 200; // макс высота в px
 
@@ -63,6 +67,7 @@ const InputArea: React.FC<InputAreaProps> = ({ thread }) => {
   const { selected, clear } = useSelectedAttachments();
   const autoApproveLockRef = useRef<unknown>(null);
   const [isMCPLoading, setIsMCPLoading] = useState(false);
+  const [deepResearchForced, setDeepResearchForced] = useState(false);
 
   const {
     collections,
@@ -132,10 +137,21 @@ const InputArea: React.FC<InputAreaProps> = ({ thread }) => {
           },
           streamMode: ["messages"],
           onDisconnect: "continue",
+          config: deepResearchForced
+            ? { configurable: { deep_research_forced: true } }
+            : undefined,
         },
       );
     },
-    [thread, selected, clear, mcpToolsPayload, enabledCollections, user],
+    [
+      thread,
+      selected,
+      clear,
+      mcpToolsPayload,
+      enabledCollections,
+      user,
+      deepResearchForced,
+    ],
   );
   const handleContinueThread = useCallback(
     async (data: any) => {
@@ -265,7 +281,16 @@ const InputArea: React.FC<InputAreaProps> = ({ thread }) => {
     void handleSendMessage(message, attachments as any);
     setMessage("");
     resetUploads();
+    setDeepResearchForced(false);
   };
+
+  const toggleDeepResearchForced = useCallback(async () => {
+    setDeepResearchForced((prev) => {
+      const next = !prev;
+      if (next) void ensureNotificationPermission();
+      return next;
+    });
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (isMobileDevice) return;
@@ -345,6 +370,15 @@ const InputArea: React.FC<InputAreaProps> = ({ thread }) => {
                 align="start"
                 sideOffset={3}
               >
+                <DropdownMenuCheckboxItem
+                  checked={deepResearchForced}
+                  onCheckedChange={() => void toggleDeepResearchForced()}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <ScanSearch className={"size-5"} />
+                  <span>Глубокое исследование</span>
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={openContextModal}>
                   <Brain className={"size-5"} />
                   <span>Персонализация</span>
@@ -389,22 +423,20 @@ const InputArea: React.FC<InputAreaProps> = ({ thread }) => {
             disabled={thread?.isLoading || isMCPLoading}
             className="flex-1 min-h-[76px] max-h-[200px] resize-none font-sans p-3 rounded-md text-foreground placeholder:text-muted-foreground overflow-y-auto outline-none border-0 disabled:opacity-60"
           />
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={
-                thread?.isLoading ||
-                isMCPLoading ||
-                !message.trim() ||
-                isUploading
-              }
-              title="Отправить"
-              className="w-9 h-9 p-0 rounded-full text-foreground flex items-center justify-center transition-colors cursor-pointer outline-hidden disabled:opacity-67"
-            >
-              <Send />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={
+              thread?.isLoading ||
+              isMCPLoading ||
+              !message.trim() ||
+              isUploading
+            }
+            title="Отправить"
+            className="w-9 h-9 p-0 rounded-full text-foreground flex items-center justify-center transition-colors cursor-pointer outline-hidden disabled:opacity-67"
+          >
+            <Send />
+          </button>
           <label
             data-onboarding="autonomy-switch"
             className="absolute top-0 right-0 flex items-center gap-2 select-none text-[11px] text-muted-foreground leading-none"
