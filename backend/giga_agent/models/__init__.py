@@ -126,6 +126,13 @@ from giga_agent.models.skill import (
     SkillUpdate,
     SkillRepository,
 )
+from giga_agent.models.project import (
+    Project,
+    ProjectCreate,
+    ProjectUpdate,
+    ProjectResponse,
+    ProjectRepository,
+)
 
 from giga_agent.models.channel import (
     ChannelBot,
@@ -250,6 +257,12 @@ __all__ = [
     "SkillCreate",
     "SkillUpdate",
     "SkillRepository",
+    # Projects
+    "Project",
+    "ProjectCreate",
+    "ProjectUpdate",
+    "ProjectResponse",
+    "ProjectRepository",
     # Channels
     "ChannelBot",
     "ChannelThread",
