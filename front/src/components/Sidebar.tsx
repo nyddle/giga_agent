@@ -650,6 +650,13 @@ const SidebarComponent = ({ onNewChat }: SidebarProps) => {
     return meta ?? {};
   };
 
+  // Threads that belong to a project are shown under their project, not in
+  // the main "Чаты" list — same as Claude.
+  const visibleThreads = useMemo(
+    () => threads.filter((t) => !getThreadMeta(t).project_id),
+    [threads],
+  );
+
   const getThreadTitle = (t: Thread): string => {
     const meta = getThreadMeta(t);
     const rawTitle =
@@ -920,13 +927,13 @@ const SidebarComponent = ({ onNewChat }: SidebarProps) => {
                 {threadsError}
               </div>
             )}
-            {!threadsLoading && !threadsError && threads.length === 0 && (
+            {!threadsLoading && !threadsError && visibleThreads.length === 0 && (
               <div className="px-2 py-1 text-sm text-muted-foreground">
                 Нет чатов
               </div>
             )}
             <div className="flex-1 min-h-0 overflow-auto">
-              {threadsLoading && threads.length === 0 ? (
+              {threadsLoading && visibleThreads.length === 0 ? (
                 <div className="px-2 py-2 space-y-2">
                   {Array.from({ length: 10 }).map((_, i) => (
                     <Skeleton key={i} className="h-9 w-full" />
@@ -934,7 +941,7 @@ const SidebarComponent = ({ onNewChat }: SidebarProps) => {
                 </div>
               ) : (
                 <>
-                  {threads.map((t) => {
+                  {visibleThreads.map((t) => {
                     const fullTitle = getThreadTitle(t);
                     const displayTitle = typedTitles[t.thread_id] ?? fullTitle;
                     const isActive = activeThreadId === t.thread_id;
@@ -1084,7 +1091,7 @@ const SidebarComponent = ({ onNewChat }: SidebarProps) => {
                       </Button>
                       {threadsTotal !== null && (
                         <div className="mt-1 text-xs text-muted-foreground text-center">
-                          Показано {threads.length} из {threadsTotal}
+                          Показано {visibleThreads.length} из {threadsTotal}
                         </div>
                       )}
                     </div>
