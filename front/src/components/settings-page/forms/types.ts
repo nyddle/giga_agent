@@ -1,6 +1,6 @@
 // Shared types for settings-page forms
 
-export type ConnectorType = "openai" | "gigachat" | "tavily";
+export type ConnectorType = "openai" | "gigachat" | "tavily" | "deepseek";
 
 /** GigaChat API type: prod uses credentials + urls; dev uses base_url + username + password */
 export type GigaChatApiType = "prod" | "dev";
@@ -92,6 +92,7 @@ export interface JsonSchemaProperty {
   title?: string;
   description?: string;
   default?: unknown;
+  items?: JsonSchemaProperty;
   enum?: Array<string | number | boolean | null>;
   oneOf?: { const?: unknown; title?: string; type?: string }[];
   anyOf?: {
@@ -99,6 +100,7 @@ export interface JsonSchemaProperty {
     const?: unknown;
     title?: string;
     enum?: unknown[];
+    items?: JsonSchemaProperty;
   }[];
 }
 

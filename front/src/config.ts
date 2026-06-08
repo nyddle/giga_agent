@@ -8,6 +8,7 @@ interface RuntimeConfig {
   basePath?: string;
   apiBasePath?: string;
   apiAgentBasePath?: string;
+  runtimeLocal?: boolean;
   skipOnboarding?: boolean;
   stt?: RuntimeSttConfig;
 }
@@ -104,6 +105,7 @@ export const API_BASE_URL =
   configuredApiBaseUrl ?? `${window.location.origin}/api`;
 export const API_PREFIX = API_BASE_URL;
 export const API_AGENT_PREFIX = `${API_BASE_URL}/agent`;
+export const RUNTIME_LOCAL = runtimeConfig.runtimeLocal === true;
 export const SKIP_ONBOARDING = runtimeConfig.skipOnboarding === true;
 export const BACKEND_STT_ENABLED = runtimeConfig.stt?.enabled === true;
 
@@ -132,6 +134,7 @@ export const TOOL_MAP = {
   browser_task: "Агент Б.Раузер",
   get_documents: "Поиск по базе знаний",
   researcher_agent: "Исследовательский агент",
+  run_deep_research: "Глубокое исследование",
 };
 
 export const PROGRESS_AGENTS = {
@@ -181,6 +184,16 @@ export const PROGRESS_AGENTS = {
     __start__: "Начинает исследование",
     research_agent: "Проводит глубокое исследование",
     critique_agent: "Анализирует результаты",
+  },
+  run_deep_research: {
+    __start__: "Запускаю глубокое исследование",
+    planner: "Раскладываю запрос на подвопросы",
+    search: "Ищу источники в сети",
+    read: "Читаю страницы и собираю выжимки",
+    reflect: "Оцениваю, достаточно ли данных",
+    compose: "Собираю финальный отчёт с цитатами",
+    critique: "Редактор проверяет отчёт",
+    finalize: "Сохраняю отчёт",
   },
 };
 
