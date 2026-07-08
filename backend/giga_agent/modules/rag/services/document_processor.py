@@ -10,20 +10,34 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from giga_agent.core.logging import get_logger
 from giga_agent.modules.rag.services.doc_parser import CustomDocxParser
+from giga_agent.modules.rag.services.markitdown_parser import MarkItDownParser
 
 logger = get_logger(__name__)
 
 # Document Parser Configuration
+#
+# DOCX идёт через markitdown (сохраняет Markdown-таблицы) с фолбэком на
+# прежний CustomDocxParser. PPTX/XLSX/EPUB раньше не поддерживались вообще.
+_DOCX_PARSER = MarkItDownParser(fallback=CustomDocxParser())
+_MARKITDOWN_PARSER = MarkItDownParser()
+
 HANDLERS = {
     "application/pdf": PDFMinerParser(),
     "text/plain": TextParser(),
     "text/markdown": TextParser(),
     "text/x-markdown": TextParser(),
     "text/html": BS4HTMLParser(),
-    "application/msword": CustomDocxParser(),
+    "application/msword": _DOCX_PARSER,
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": (
-        CustomDocxParser()
+        _DOCX_PARSER
     ),
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": (
+        _MARKITDOWN_PARSER
+    ),
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": (
+        _MARKITDOWN_PARSER
+    ),
+    "application/epub+zip": _MARKITDOWN_PARSER,
 }
 
 SUPPORTED_MIMETYPES = sorted(HANDLERS.keys())

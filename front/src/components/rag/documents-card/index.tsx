@@ -40,6 +40,9 @@ const ACCEPTED_FILE_EXTENSIONS = [
   ".html",
   ".doc",
   ".docx",
+  ".pptx",
+  ".xlsx",
+  ".epub",
 ];
 const ACCEPTED_MIME_TYPES = [
   "application/pdf",
@@ -49,6 +52,9 @@ const ACCEPTED_MIME_TYPES = [
   "text/html",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/epub+zip",
 ];
 
 const getFileExtension = (fileName: string) =>

@@ -15,6 +15,9 @@ const ACCEPTED_FILE_EXTENSIONS = [
   ".html",
   ".doc",
   ".docx",
+  ".pptx",
+  ".xlsx",
+  ".epub",
 ];
 
 type DocumentItem = {

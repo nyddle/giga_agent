@@ -63,6 +63,9 @@ dependencies = [
     "redis==7.2.1",
     "psycopg2-binary>=2.9.11,<3.0.0",
     "python-docx>=1.1.0,<2.0.0",
+    # Конвертация офисных форматов в Markdown (RAG-инжест PPTX/XLSX/EPUB,
+    # чтение вложений). Выборочные extras — полный набор тянет OCR/аудио.
+    "markitdown[docx,pptx,xlsx]>=0.1.3,<0.2.0",
     "plotly>=6.0.0,<7.0.0",
     "kaleido>=1.0.0,<2.0.0",
     "aiogram>=3.26.0,<4.0.0",

@@ -144,6 +144,23 @@ def _decode_text_bytes(data: bytes) -> str | None:
         return None
 
 
+def _extract_office_markdown(data: bytes, file_name: str | None) -> str | None:
+    """Офисный файл → Markdown через markitdown (структура и таблицы целы)."""
+    try:
+        import io as _io
+
+        from markitdown import MarkItDown, StreamInfo
+
+        result = MarkItDown(enable_plugins=False).convert_stream(
+            _io.BytesIO(data),
+            stream_info=StreamInfo(filename=file_name or None),
+        )
+        text = (result.markdown or "").strip()
+        return text or None
+    except Exception:
+        return None
+
+
 def _text_from_file_bytes(
     *,
     data: bytes,
@@ -169,7 +186,20 @@ def _text_from_file_bytes(
         or lower_name.endswith(".docx")
         or lower_path.endswith(".docx")
     ):
-        return _extract_docx_text(data)
+        # markitdown сохраняет структуру (таблицы → Markdown-таблицы);
+        # python-docx остаётся фолбэком.
+        return (
+            _extract_office_markdown(data, file_name or "document.docx")
+            or _extract_docx_text(data)
+        )
+
+    if (
+        normalized_media_type
+        == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        or lower_name.endswith(".pptx")
+        or lower_path.endswith(".pptx")
+    ):
+        return _extract_office_markdown(data, file_name or "document.pptx")
 
     return _decode_text_bytes(data)
 
