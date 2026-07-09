@@ -137,6 +137,17 @@ def _build_file_prompt(last_message: AnyMessage) -> str:
         )
 
         item = f"""Файл загружен в виртуальное окружение по пути: '{path_str}'"""
+        # Эксперимент (GIGA_AGENT_MARKITDOWN_XLSX): маленький xlsx читается
+        # напрямую read_file'ом (markdown-таблица) — подсказываем модели,
+        # иначе она по привычке уходит в python/pandas.
+        if path_str.lower().endswith(".xlsx"):
+            from giga_agent.modules.io.tools import _xlsx_context_enabled
+
+            if _xlsx_context_enabled():
+                item += (
+                    "\nЭто небольшая таблица: прочитай её инструментом read_file "
+                    "— вернётся готовая markdown-таблица. Python для этого не нужен."
+                )
         if is_image:
             image_path = file.get("image_path") or path_str
             item += (
