@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import mimetypes
+import os
 import re
 import uuid
 from pathlib import PurePosixPath
@@ -145,7 +146,16 @@ def _decode_text_bytes(data: bytes) -> str | None:
 
 
 def _extract_office_markdown(data: bytes, file_name: str | None) -> str | None:
-    """Офисный файл → Markdown через markitdown (структура и таблицы целы)."""
+    """Офисный файл → Markdown через markitdown (структура и таблицы целы).
+
+    GIGA_AGENT_MARKITDOWN=off — kill-switch: возвращаем None, срабатывают
+    прежние экстракторы (python-docx/plain). Также используется бенчмарком
+    для честного A/B «GigaAgent без/с markitdown».
+    """
+    if os.environ.get("GIGA_AGENT_MARKITDOWN", "on").lower() in (
+        "off", "0", "false", "no"
+    ):
+        return None
     try:
         import io as _io
 

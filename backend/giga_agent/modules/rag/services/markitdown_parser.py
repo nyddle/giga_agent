@@ -40,6 +40,19 @@ class MarkItDownParser(BaseBlobParser):
         self._fallback = fallback
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:
+        # Kill-switch (он же A/B-переключатель бенчмарка): off → сразу фолбэк.
+        import os
+
+        if os.environ.get("GIGA_AGENT_MARKITDOWN", "on").lower() in (
+            "off", "0", "false", "no"
+        ):
+            if self._fallback is None:
+                raise ValueError(
+                    "markitdown выключен (GIGA_AGENT_MARKITDOWN=off), "
+                    "фолбэк-парсера для этого формата нет"
+                )
+            yield from self._fallback.lazy_parse(blob)
+            return
         try:
             from markitdown import StreamInfo
 
