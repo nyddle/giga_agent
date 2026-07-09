@@ -103,7 +103,8 @@ def run_agent(client: httpx.Client, tok: str, question: str, file_payload: dict)
 
 def tokens_between(t_start: str, t_end: str) -> dict:
     q = (
-        "SELECT coalesce(sum(input_tokens),0), coalesce(sum(output_tokens),0), count(*) "
+        "SELECT coalesce(sum(input_tokens),0), coalesce(sum(output_tokens),0), count(*), "
+        "coalesce(string_agg(DISTINCT model, ','), '') "
         f"FROM core_usage_events WHERE created_at >= '{t_start}' AND created_at <= '{t_end}';"
     )
     out = subprocess.run(
@@ -111,9 +112,10 @@ def tokens_between(t_start: str, t_end: str) -> dict:
          "psql", "-U", "postgres", "-d", "postgres", "-tAc", q],
         capture_output=True, text=True,
     ).stdout.strip()
-    i, o, n = (out.split("|") + ["0", "0", "0"])[:3]
+    parts = out.split("|") + ["0", "0", "0", ""]
+    i, o, n, models = parts[0], parts[1], parts[2], parts[3]
     return {"input_tokens": int(i or 0), "output_tokens": int(o or 0),
-            "model_calls": int(n or 0)}
+            "model_calls": int(n or 0), "models": models}
 
 
 _norm_re = re.compile(r"[^\w\.\-]+", re.UNICODE)
@@ -181,6 +183,7 @@ def main():
     tok = login(client)
     print(f"условие {args.condition}: вопросов {len(golden)} × {args.repeats} повторов; уже сделано {len(done)}")
 
+    empty_streak = 0
     with open(out_path, "a") as out:
         for g in golden:
             fpath = BENCH / "corpus" / g["file"]
@@ -222,6 +225,14 @@ def main():
                                "error": f"{type(e).__name__}: {e}"[:200],
                                "correct": False}
                 time.sleep(2.5)  # межрановая пауза — не дёргать lifecycle песочницы
+                if rec is not None and not (rec.get("answer") or "").strip() and "error" not in rec:
+                    empty_streak += 1
+                else:
+                    empty_streak = 0
+                if empty_streak >= 4:
+                    print("СТОП: 4 пустых ответа подряд — модель/квота мертва, прогон прерван")
+                    out.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                    return
                 out.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 out.flush()
                 mark = "✓" if rec.get("correct") else ("✗" if "error" not in rec else "E")
