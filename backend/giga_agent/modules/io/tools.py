@@ -98,6 +98,24 @@ def _is_tabular_file_reference(
     return False
 
 
+# --- Эксперимент (фаза 2): маленький XLSX → markdown-таблица в контекст ---
+# Гипотеза: для небольших таблиц контекст дешевле REPL-цикла (песочница + код).
+# Выключено по умолчанию; включается GIGA_AGENT_MARKITDOWN_XLSX=on.
+_XLSX_CONTEXT_MAX_BYTES = 100_000
+
+
+def _xlsx_context_enabled() -> bool:
+    return os.environ.get("GIGA_AGENT_MARKITDOWN_XLSX", "off").lower() in (
+        "on", "1", "true", "yes"
+    )
+
+
+def _is_xlsx_reference(sandbox_path: str, file_name: str | None = None) -> bool:
+    return (sandbox_path or "").lower().endswith(".xlsx") or (
+        (file_name or "").lower().endswith(".xlsx")
+    )
+
+
 def _build_tabular_read_hint(*, sandbox_path: str) -> str:
     return (
         f"Файл: {sandbox_path}\n"
@@ -210,6 +228,11 @@ def _text_from_file_bytes(
         or lower_path.endswith(".pptx")
     ):
         return _extract_office_markdown(data, file_name or "document.pptx")
+
+    # Сюда XLSX попадает только в экспериментальном режиме (см. read_file):
+    # маленький файл при GIGA_AGENT_MARKITDOWN_XLSX=on.
+    if lower_name.endswith(".xlsx") or lower_path.endswith(".xlsx"):
+        return _extract_office_markdown(data, file_name or "document.xlsx")
 
     return _decode_text_bytes(data)
 
@@ -730,7 +753,9 @@ async def read_file(
     user_id = get_user_id_from_config(runtime.config)
     owner_id = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
 
-    if _is_tabular_file_reference(sandbox_path=sandbox_path):
+    if _is_tabular_file_reference(sandbox_path=sandbox_path) and not (
+        _xlsx_context_enabled() and _is_xlsx_reference(sandbox_path)
+    ):
         return _result(_build_tabular_read_hint(sandbox_path=sandbox_path))
 
     if _is_cli_runtime():
@@ -769,11 +794,18 @@ async def read_file(
     media_type = getattr(result, "media_type", None)
 
     # Табличные файлы отсекаем по метаданным ДО любого чтения содержимого.
+    # Исключение (эксперимент): маленький XLSX при включённом флаге читаем
+    # в контекст markdown-таблицей вместо отправки в REPL.
+    xlsx_to_context = (
+        _xlsx_context_enabled()
+        and _is_xlsx_reference(sandbox_path, file_record.original_name)
+        and (known_size is None or known_size <= _XLSX_CONTEXT_MAX_BYTES)
+    )
     if _is_tabular_file_reference(
         sandbox_path=sandbox_path,
         file_name=file_record.original_name,
         media_type=media_type,
-    ):
+    ) and not xlsx_to_context:
         return _result(_build_tabular_read_hint(sandbox_path=sandbox_path))
 
     # Размер по метаданным: отказываем большим файлам, не материализуя их.

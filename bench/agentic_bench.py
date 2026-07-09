@@ -145,13 +145,15 @@ def now_utc() -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--condition", required=True, choices=["A", "B"])
+    ap.add_argument("--condition", required=True)  # произвольная метка условия
     ap.add_argument("--limit", type=int, default=30)
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--only-qids", default=None, help="через запятую")
+    ap.add_argument("--golden", default=None, help="путь к golden jsonl (дефолт bench/golden.jsonl)")
     args = ap.parse_args()
 
-    golden = [json.loads(l) for l in open(BENCH / "golden.jsonl")]
+    golden_path = Path(args.golden) if args.golden else BENCH / "golden.jsonl"
+    golden = [json.loads(l) for l in open(golden_path)]
     if args.only_qids:
         keep = set(args.only_qids.split(","))
         golden = [g for g in golden if g["qid"] in keep]
